@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="fa">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sentient Profile — Hat Overlay</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Hat Overlay</h1>
+    <div class="actions">
+      <label class="btn">
+        آپلود عکس
+        <input id="fileInput" type="file" accept="image/*" hidden>
+      </label>
+      <button id="downloadBtn" class="btn" disabled>دانلود PNG</button>
+      <button id="deleteBtn" class="btn" disabled>حذف کلاه</button>
+    </div>
+  </header>
+
+  <main>
+    <aside>
+      <h3>کلاه‌ها</h3>
+      <div id="hats" class="hat-grid">
+        <!-- تصاویر کلاه‌ها (PNG شفاف) -->
+        <img src="assets/overlays/hat1.png" alt="hat1" class="hat-thumb">
+        <img src="assets/overlays/hat2.png" alt="hat2" class="hat-thumb">
+        <img src="assets/overlays/hat3.png" alt="hat3" class="hat-thumb">
+      </div>
+
+      <div class="panel">
+        <h3>کنترل‌ها</h3>
+        <div class="row">
+          <label>چرخش</label>
+          <input id="rotateRange" type="range" min="-180" max="180" value="0" step="1">
+        </div>
+        <div class="row">
+          <label>مقیاس</label>
+          <input id="scaleRange" type="range" min="0.1" max="3" value="1" step="0.01">
+        </div>
+        <div class="row two">
+          <button id="flipBtn" class="btn small" disabled>Mirror افقی</button>
+          <button id="resetBtn" class="btn small" disabled>ریست انتخاب</button>
+        </div>
+        <p class="hint">کشیدن با ماوس/لمس = جابه‌جایی • اسکرول = زوم روی کلاه انتخاب‌شده</p>
+        <p class="hint">کلیدها: ⌫/Delete = حذف • Q/E = چرخش ±۵°</p>
+      </div>
+    </aside>
+
+    <section class="stage-wrap">
+      <canvas id="canvas"></canvas>
+      <div id="dropHint" class="drop-hint">عکس را اینجا رها کنید یا از «آپلود عکس» استفاده کنید</div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
