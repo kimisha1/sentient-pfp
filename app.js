@@ -1,5 +1,130 @@
-const file = it.getAsFile();
-      const url = URL.createObjectURL(file);
+// ---------- refs ----------
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+const fileInput   = document.getElementById('fileInput');
+const pickBtn     = document.getElementById('pickBtn');
+const hatsGrid    = document.getElementById('hats');
+const rotateRange = document.getElementById('rotateRange');
+const scaleRange  = document.getElementById('scaleRange');
+const flipBtn     = document.getElementById('flipBtn');
+const resetBtn    = document.getElementById('resetBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const deleteBtn   = document.getElementById('deleteBtn');
+const dropHint    = document.getElementById('dropHint');
+const statusEl    = document.getElementById('status');
+
+let baseImg = null;
+let overlays = [];
+let active = -1;
+
+// ---------- helpers ----------
+const clamp   = (v,a,b)=>Math.max(a,Math.min(b,v));
+const deg2rad = d => d*Math.PI/180;
+const rad2deg = r => Math.round(r*180/Math.PI);
+const setStatus = t => { if(statusEl) statusEl.textContent = t || ''; };
+
+function fitCanvasToImage(img){
+  const maxW = Math.min(1200, canvas.parentElement.clientWidth - 24);
+  const maxH = Math.min(900, window.innerHeight * 0.8);
+  const r = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight, 1);
+  canvas.width  = Math.max(1, Math.round(img.naturalWidth  * r));
+  canvas.height = Math.max(1, Math.round(img.naturalHeight * r));
+}
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(!baseImg) return;
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.drawImage(baseImg, 0, 0, canvas.width, canvas.height);
+
+  overlays.forEach((o,i)=>{
+    ctx.save();
+    ctx.translate(o.x, o.y);
+    ctx.rotate(o.rot);
+    ctx.scale(o.flip ? -o.scale : o.scale, o.scale);
+    ctx.drawImage(o.img, -o.w/2, -o.h/2, o.w, o.h);
+    if(i === active){
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#3b82f6';
+      ctx.strokeRect(-o.w/2, -o.h/2, o.w, o.h);
+    }
+    ctx.restore();
+  });
+}
+
+function setActive(i){
+  active = i;
+  const has = i >= 0;
+  rotateRange.disabled = !has;
+  scaleRange.disabled  = !has;
+  flipBtn.disabled     = !has;
+  resetBtn.disabled    = !has;
+  deleteBtn.disabled   = !has;
+  if(has){
+    rotateRange.value = rad2deg(overlays[i].rot);
+    scaleRange.value  = overlays[i].scale.toFixed(2);
+  }
+  draw();
+}
+
+// ---------- upload ----------
+if(pickBtn) pickBtn.addEventListener('click', ()=> fileInput.click());
+
+if(fileInput){
+  fileInput.addEventListener('change', (e)=>{
+    const file = e.target.files && e.target.files[0];
+    if(!file){ setStatus('فایلی انتخاب نشد.'); return; }
+    if(!file.type.startsWith('image/')){ setStatus('فقط فایل تصویری انتخاب کن.'); return; }
+
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = ()=>{
+      baseImg = img;
+      fitCanvasToImage(img);
+      downloadBtn.disabled = false;
+      dropHint.style.display = 'none';
+      setStatus('');
+      draw();
+      URL.revokeObjectURL(url);
+    };
+    img.onerror = ()=> setStatus('لود تصویر ناموفق بود.');
+    img.src = url;
+  });
+}
+
+// drag & drop (desktop)
+['dragenter','dragover','dragleave','drop'].forEach(ev=>{
+  canvas.addEventListener(ev, e=>e.preventDefault(), {passive:false});
+});
+canvas.addEventListener('dragover', ()=> dropHint.style.opacity = .3);
+canvas.addEventListener('dragleave',()=> dropHint.style.opacity = 1);
+canvas.addEventListener('drop', (e)=>{
+  const f = e.dataTransfer.files && e.dataTransfer.files[0];
+  if(!f) return;
+  const url = URL.createObjectURL(f);
+  const img = new Image();
+  img.onload = ()=>{
+    baseImg = img;
+    fitCanvasToImage(img);
+    downloadBtn.disabled = false;
+    dropHint.style.display = 'none';
+    setStatus('');
+    draw();
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
+});
+
+// paste (Ctrl/Cmd+V)
+window.addEventListener('paste', (e)=>{
+  const items = e.clipboardData && e.clipboardData.items;
+  if(!items) return;
+  for(const it of items){
+    if(it.type.indexOf('image')===0){
+      const file = it.getAsFile();
+          const url = URL.createObjectURL(file);
       const img = new Image();
       img.onload = ()=>{
         baseImg = img;
@@ -31,7 +156,7 @@ hatsGrid.addEventListener('click', (e)=>{
       scale: 1, rot: 0, flip: false,
       w: baseW, h: baseW * ratio
     });
-    setActive(overlays.length-1);
+    setActive(overlays.length - 1);
   };
   img.src = src;
 });
@@ -64,6 +189,7 @@ deleteBtn.addEventListener('click', ()=>{
   setActive(-1);
 });
 
+// ---------- drag move ----------
 let isDragging=false, dragDX=0, dragDY=0;
 canvas.addEventListener('mousedown', startDrag);
 canvas.addEventListener('touchstart', startDrag, {passive:false});
